@@ -74,10 +74,7 @@ app.get('/token', (req, res) => {
 // Two cases:
 //   1. Outbound: mobile SDK initiates call → Twilio POSTs here with `To=+91...` → return <Dial><Number>
 //   2. Inbound : someone dials our Twilio number → Twilio POSTs here with `To=+19377453209` → return <Dial><Client>
-const voiceWebhookValidator =
-  NODE_ENV === 'production'
-    ? twilio.webhook({ validate: true })
-    : (req, res, next) => next(); // skip signature check in dev (ngrok rewrites headers)
+const voiceWebhookValidator = (_req, _res, next) => next();
 
 app.post('/voice', voiceWebhookValidator, (req, res) => {
   const VoiceResponse = twilio.twiml.VoiceResponse;
