@@ -80,10 +80,14 @@ app.post('/voice', voiceWebhookValidator, (req, res) => {
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const response = new VoiceResponse();
   const to = (req.body.To || '').toString().trim();
+  const from = (req.body.From || '').toString().trim();
+
+  console.log(`[voice] To="${to}" From="${from}" TWILIO_PHONE_NUMBER="${TWILIO_PHONE_NUMBER}"`);
 
   // Outbound: app passes a contact's phone number as `To`.
   // Inbound: someone calls our Twilio number, so `To` == TWILIO_PHONE_NUMBER — route to client.
   const isOutbound = /^\+\d{6,}$/.test(to) && to !== TWILIO_PHONE_NUMBER;
+  console.log(`[voice] isOutbound=${isOutbound}`);
 
   if (isOutbound) {
     // Outbound: mobile dialing a real phone number
