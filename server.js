@@ -81,11 +81,11 @@ app.post('/voice', voiceWebhookValidator, (req, res) => {
   const response = new VoiceResponse();
   const to = (req.body.To || '').toString().trim();
 
-  // Heuristic: if `To` looks like an E.164 phone number → outbound to PSTN.
-  // Otherwise → inbound, dial the registered client identity.
-  const isPhoneNumber = /^\+\d{6,}$/.test(to);
+  // Outbound: app passes a contact's phone number as `To`.
+  // Inbound: someone calls our Twilio number, so `To` == TWILIO_PHONE_NUMBER — route to client.
+  const isOutbound = /^\+\d{6,}$/.test(to) && to !== TWILIO_PHONE_NUMBER;
 
-  if (isPhoneNumber) {
+  if (isOutbound) {
     // Outbound: mobile dialing a real phone number
     const dial = response.dial({
       callerId: TWILIO_PHONE_NUMBER,
