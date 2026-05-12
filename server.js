@@ -111,14 +111,10 @@ app.post('/voice', voiceWebhookValidator, (req, res) => {
       answerOnBridge: true,
       action: '/status-callback',
     });
-    dial.client(
-      {
-        statusCallback: '/status-callback',
-        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-        statusCallbackMethod: 'POST',
-      },
-      'salesden_user'
-    );
+    // Pass the real caller's number as a custom param so the app can display the name
+    const clientElem = dial.client();
+    clientElem.identity('salesden_user');
+    clientElem.parameter({ name: 'from_number', value: from });
   }
 
   res.type('text/xml').send(response.toString());
