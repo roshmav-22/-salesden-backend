@@ -105,16 +105,21 @@ app.post('/voice', voiceWebhookValidator, (req, res) => {
       to
     );
   } else {
-    // Inbound: external phone calling our Twilio number → ring the registered client
+    // Inbound: external phone calling our Twilio number → ring the registered client.
+    // Use the real caller's number as callerId so invite.getFrom() returns it (not our Twilio number).
     const dial = response.dial({
-      callerId: TWILIO_PHONE_NUMBER,
+      callerId: from,
       answerOnBridge: true,
       action: '/status-callback',
     });
-    // Pass the real caller's number as a custom param so the app can display the name
-    const clientElem = dial.client();
-    clientElem.identity('salesden_user');
-    clientElem.parameter({ name: 'from_number', value: from });
+    dial.client(
+      {
+        statusCallback: '/status-callback',
+        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+        statusCallbackMethod: 'POST',
+      },
+      'salesden_user'
+    );
   }
 
   res.type('text/xml').send(response.toString());
