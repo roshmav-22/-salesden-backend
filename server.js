@@ -25,6 +25,24 @@ const {
   NODE_ENV = 'development',
 } = process.env;
 
+// Contact name lookup — mirrors src/data/potentials.ts in the mobile app.
+// When an inbound call arrives, we set callerId to the contact name so the
+// native Twilio SDK notification banner shows the name instead of the phone number.
+const CONTACT_NAMES = {
+  '+919886306995': 'Rahul Sharma',
+  '+917708975110': 'Priya Menon',
+  '+917867974625': 'Amit Patel',
+  '+16099177177': 'Champavathi S',
+};
+
+function getContactName(phone) {
+  const digits = phone.replace(/\D/g, '');
+  for (const [key, name] of Object.entries(CONTACT_NAMES)) {
+    if (key.replace(/\D/g, '') === digits) return name;
+  }
+  return null;
+}
+
 // Fail fast if required Twilio creds are missing — better than confusing 500s later.
 const required = {
   TWILIO_ACCOUNT_SID,
@@ -106,20 +124,17 @@ app.post('/voice', voiceWebhookValidator, (req, res) => {
     );
   } else {
     // Inbound: external phone calling our Twilio number → ring the registered client.
-    // Use the real caller's number as callerId so invite.getFrom() returns it (not our Twilio number).
+    // callerId = contact name (if known) so the native SDK notification shows the name.
+    // The real phone number is passed as a custom param so the app can use it for history.
+    const callerDisplay = getContactName(from) || from;
     const dial = response.dial({
-      callerId: from,
+      callerId: callerDisplay,
       answerOnBridge: true,
       action: '/status-callback',
     });
-    dial.client(
-      {
-        statusCallback: '/status-callback',
-        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-        statusCallbackMethod: 'POST',
-      },
-      'salesden_user'
-    );
+    const clientElem = dial.client();
+    clientElem.identity('salesden_user');
+    clientElem.parameter({ name: 'from_number', value: from });
   }
 
   res.type('text/xml').send(response.toString());
